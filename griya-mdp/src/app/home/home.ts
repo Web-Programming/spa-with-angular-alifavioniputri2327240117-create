@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
 import { LokasiPerumahan } from '../lokasi-perumahan/lokasi-perumahan';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-home',
-  imports: [LokasiPerumahan],
+  imports: [LokasiPerumahan, CommonModule],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })

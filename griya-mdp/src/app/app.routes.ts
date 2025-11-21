@@ -6,7 +6,7 @@ import { Register } from './register/register';
 import { Contact } from './contact/contact';
 
 export const routes: Routes = [
-    // Mengatur halaman utama aplikasi
+    //mengatuh halaman utama aplikasi
     {
         path : "",
         component : HomeComponent,
@@ -15,7 +15,7 @@ export const routes: Routes = [
     {
         path : "profile",
         component : Profile,
-        title : 'Profile Page'
+        //title : 'Profile Page'
     },
     {
         path : "login",
@@ -29,4 +29,5 @@ export const routes: Routes = [
         path : "contact",
         component : Contact,
     },
+
 ];
