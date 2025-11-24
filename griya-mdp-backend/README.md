@@ -22,7 +22,6 @@ griya-mdp-backend/
 ├── app_server/
 │   ├── controllers/
 │   │   ├── housingcontroller.js  # Controller untuk housing
-│   │   ├── mahasiswacontroller.js
 │   │   └── main.js
 │   ├── models/
 │   │   ├── db.js                 # Konfigurasi koneksi MongoDB
@@ -107,66 +106,38 @@ File: `app_server/models/housing.js`
 const mongoose = require("mongoose");
 
 const housingSchema = new mongoose.Schema({
-    id: {
+    idhousing: {
         type: Number,
-        required: true,
-        unique: true
+        required: true
     },
-    title: {
+    name: {
         type: String,
         required: true
     },
-    location: {
+    city: {
         type: String,
         required: true
     },
-    price: {
-        type: Number,
-        required: true
-    },
-    bedrooms: {
-        type: Number,
-        required: true
-    },
-    bathrooms: {
-        type: Number,
-        required: true
-    },
-    area: {
-        type: Number,
-        required: true
-    },
-    image: {
+    state: {
         type: String,
         required: true
     },
-    rating: {
+    photo: {
+        type: String,
+        required: true
+    },
+    availableUnits: {
         type: Number,
-        required: true,
-        min: 0,
-        max: 5
+        required: true
     },
-    status: {
-        type: String,
-        required: true,
-        enum: ['Available', 'Pending', 'Sold']
+    wifi: {
+        type: Boolean,
+        required: true
     },
-    type: {
-        type: String,
-        required: false,
-        enum: ['rumah', 'apartemen', 'villa']
-    },
-    description: {
-        type: String,
-        required: false
-    },
-    postedDays: {
-        type: Number,
-        required: false,
-        min: 0
+    laundry: {
+        type: Boolean,
+        required: true
     }
-}, {
-    timestamps: true // Adds createdAt and updatedAt fields
 });
 
 const Housing = mongoose.model('Housing', housingSchema);
@@ -174,11 +145,9 @@ module.exports = Housing;
 ```
 
 **Penjelasan:**
-- Schema disesuaikan dengan Angular Housing model
-- Field utama: id, title, location, price, bedrooms, bathrooms, area
-- Field pendukung: image, rating, status, type, description, postedDays
-- Validasi: rating (0-5), status enum, type enum
-- Timestamps otomatis untuk tracking createdAt & updatedAt
+- Schema mendefinisikan struktur dokumen housing
+- Setiap field memiliki type dan validation
+- Model 'Housing' akan otomatis membuat collection 'housings' (plural)
 
 ### **Langkah 5: Membuat Controller**
 
@@ -187,77 +156,26 @@ File: `app_server/controllers/housingcontroller.js`
 ```javascript
 const Housing = require("../models/housing");
 
-// Get all housing or filter by type
 const Index = async (req, res) => {
     try {
-        const { type } = req.query;
-        
-        // Build query object
-        let query = {};
-        if (type) {
-            // Filter by type if query parameter exists
-            query.type = type;
-        }
-        
-        const housing = await Housing.find(query);
-        
-        if (!housing || housing.length === 0) {
-            return res.status(404).json({ 
-                message: "No housing found",
-                data: []
-            });
-        }
-        
+        const housing = await Housing.find({});
         res.status(200).json(housing);
-    } catch (error) {
-        res.status(500).json({ 
-            message: "Error retrieving housing", 
-            error: error.message 
-        });
-    }
-};
-
-// Get housing by ID
-const GetById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        
-        // Find housing by ID
-        const housing = await Housing.findById(id);
-        
-        if (!housing) {
-            return res.status(404).json({ 
-                message: "Housing not found",
-                id: id
-            });
+        if(!housing){
+            res.status(400).json({message: "Collection is Empty"})
         }
-        
-        res.status(200).json(housing);
     } catch (error) {
-        // Handle invalid ObjectId format
-        if (error.kind === 'ObjectId') {
-            return res.status(400).json({ 
-                message: "Invalid housing ID format",
-                id: req.params.id
-            });
-        }
-        
-        res.status(500).json({ 
-            message: "Error retrieving housing", 
-            error: error.message 
-        });
+        res.status(500).json({ message: "Error retrieving users", error});
     }
-};
+}
 
-module.exports = { Index, GetById };
+module.exports = { Index }
 ```
 
 **Penjelasan:**
-- `Index`: Get all housing atau filter by type (rumah, apartemen, villa)
-- `GetById`: Get housing berdasarkan MongoDB ObjectId
-- Support query parameter `?type=rumah` untuk filtering
-- Better error handling dengan status code yang tepat
-- Validasi untuk invalid ObjectId format
+- `Index`: Function untuk mengambil semua data housing
+- Menggunakan `async/await` untuk operasi asynchronous
+- Error handling dengan try-catch
+- Mengembalikan response dalam format JSON
 
 ### **Langkah 6: Membuat Routes**
 
@@ -268,20 +186,15 @@ const express = require("express");
 const router = express.Router();
 const housingController = require("../controllers/housingcontroller");
 
-// Get all housing (with optional type filter via query parameter)
+// Route untuk mendapatkan semua data housing
 router.get("/", housingController.Index);
-
-// Get housing by ID
-router.get("/:id", housingController.GetById);
 
 module.exports = router;
 ```
 
 **Penjelasan:**
-- Route `GET /housing` - Get all housing atau filter by type
-- Route `GET /housing/:id` - Get specific housing by ID
-- Query parameter `?type=rumah` untuk filtering
-- RESTful API design pattern
+- Mendefinisikan route `/housing` yang akan memanggil `housingController.Index`
+- Method GET untuk retrieve data
 
 ### **Langkah 7: Konfigurasi Database Connection**
 
@@ -388,19 +301,14 @@ module.exports = app;
 Contoh dokumen dalam collection `housings`:
 ```json
 {
-  "id": 1,
-  "title": "Griya Asri Residence",
-  "location": "Jakarta Selatan",
-  "price": 850000000,
-  "bedrooms": 3,
-  "bathrooms": 2,
-  "area": 120,
-  "image": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&h=400&fit=crop",
-  "rating": 4.5,
-  "status": "Available",
-  "type": "rumah",
-  "description": "Hunian modern dengan desain minimalis di kawasan Jakarta Selatan yang strategis.",
-  "postedDays": 2
+  "idhousing": 0,
+  "name": "Acme Fresh Start Housing",
+  "city": "Chicago",
+  "state": "IL",
+  "photo": "/bernard-hermant-CLKGGwIBTaY-unsplash.jpg",
+  "availableUnits": 4,
+  "wifi": true,
+  "laundry": true
 }
 ```
 
@@ -442,22 +350,15 @@ curl http://localhost:3000/housing
 ```json
 [
   {
-    "_id": "673b1234567890abcdef1234",
-    "id": 1,
-    "title": "Griya Asri Residence",
-    "location": "Jakarta Selatan",
-    "price": 850000000,
-    "bedrooms": 3,
-    "bathrooms": 2,
-    "area": 120,
-    "image": "https://images.unsplash.com/photo-1568605114967-8130f3a36994",
-    "rating": 4.5,
-    "status": "Available",
-    "type": "rumah",
-    "description": "Hunian modern dengan desain minimalis",
-    "postedDays": 2,
-    "createdAt": "2025-11-13T08:00:00.000Z",
-    "updatedAt": "2025-11-13T08:00:00.000Z",
+    "_id": "...",
+    "idhousing": 0,
+    "name": "Acme Fresh Start Housing",
+    "city": "Chicago",
+    "state": "IL",
+    "photo": "/bernard-hermant-CLKGGwIBTaY-unsplash.jpg",
+    "availableUnits": 4,
+    "wifi": true,
+    "laundry": true,
     "__v": 0
   },
   ...
@@ -468,7 +369,7 @@ curl http://localhost:3000/housing
 
 ## API Endpoints
 
-### 1. GET /housing
+### GET /housing
 Mengambil semua data housing
 
 **Request:**
@@ -480,119 +381,32 @@ GET http://localhost:3000/housing
 ```json
 [
   {
-    "_id": "673b1234567890abcdef1234",
-    "id": 1,
-    "title": "Griya Asri Residence",
-    "location": "Jakarta Selatan",
-    "price": 850000000,
-    "bedrooms": 3,
-    "bathrooms": 2,
-    "area": 120,
-    "image": "https://images.unsplash.com/...",
-    "rating": 4.5,
-    "status": "Available",
-    "type": "rumah",
-    "description": "Hunian modern...",
-    "postedDays": 2
+    "_id": "507f1f77bcf86cd799439011",
+    "idhousing": 0,
+    "name": "Acme Fresh Start Housing",
+    "city": "Chicago",
+    "state": "IL",
+    "photo": "/bernard-hermant-CLKGGwIBTaY-unsplash.jpg",
+    "availableUnits": 4,
+    "wifi": true,
+    "laundry": true
   }
 ]
 ```
 
-**Response (Not Found - 404):**
+**Response (Empty - 400):**
 ```json
 {
-  "message": "No housing found",
-  "data": []
+  "message": "Collection is Empty"
 }
 ```
 
 **Response (Error - 500):**
 ```json
 {
-  "message": "Error retrieving housing",
-  "error": "..."
+  "message": "Error retrieving users",
+  "error": { ... }
 }
-```
-
----
-
-### 2. GET /housing/:id
-Mengambil data housing berdasarkan MongoDB ObjectId
-
-**Request:**
-```http
-GET http://localhost:3000/housing/673b1234567890abcdef1234
-```
-
-**Response (Success - 200):**
-```json
-{
-  "_id": "673b1234567890abcdef1234",
-  "id": 1,
-  "title": "Griya Asri Residence",
-  "location": "Jakarta Selatan",
-  "price": 850000000,
-  "bedrooms": 3,
-  "bathrooms": 2,
-  "area": 120,
-  "image": "https://images.unsplash.com/...",
-  "rating": 4.5,
-  "status": "Available",
-  "type": "rumah",
-  "description": "Hunian modern...",
-  "postedDays": 2
-}
-```
-
-**Response (Not Found - 404):**
-```json
-{
-  "message": "Housing not found",
-  "id": "673b1234567890abcdef1234"
-}
-```
-
-**Response (Invalid ID - 400):**
-```json
-{
-  "message": "Invalid housing ID format",
-  "id": "invalid-id"
-}
-```
-
----
-
-### 3. GET /housing?type={type}
-Filter housing berdasarkan tipe properti
-
-**Request:**
-```http
-GET http://localhost:3000/housing?type=rumah
-```
-
-**Supported Types:**
-- `rumah` - Rumah/House
-- `apartemen` - Apartment
-- `villa` - Villa
-
-**Response (Success - 200):**
-```json
-[
-  {
-    "_id": "...",
-    "id": 1,
-    "title": "Griya Asri Residence",
-    "type": "rumah",
-    ...
-  },
-  {
-    "_id": "...",
-    "id": 2,
-    "title": "Taman Indah Village",
-    "type": "rumah",
-    ...
-  }
-]
 ```
 
 ---
